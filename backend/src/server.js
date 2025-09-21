@@ -34,6 +34,16 @@ app.use(express.urlencoded({ extended: true }));
 // Routes
 app.use('/api/snippets', snippetRoutes);
 
+// Add singular route for compatibility with Vercel API structure
+app.use('/api/snippet', snippetRoutes);
+
+// Add stats route for compatibility with Vercel API structure
+app.use('/api/stats', (req, res, next) => {
+  // Redirect to the snippets stats endpoint
+  req.url = '/stats/summary';
+  snippetRoutes(req, res, next);
+});
+
 // Health check endpoint
 app.get('/api/health', (req, res) => {
   res.status(200).json({ 
