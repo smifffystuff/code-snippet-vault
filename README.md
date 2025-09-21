@@ -11,6 +11,7 @@ A modern web application for developers to store, organize, and search useful co
 - **CRUD Operations**: Create, read, update, and delete snippets
 - **REST API**: Well-documented API for snippet management
 
+
 ## 🛠 Tech Stack
 
 ### Frontend
