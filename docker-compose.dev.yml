@@ -1,0 +1,18 @@
+version: '3.8'
+
+services:
+  # MongoDB Database for development
+  mongodb:
+    image: mongo:6.0
+    container_name: code-vault-db-dev
+    restart: unless-stopped
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongodb_data:/data/db
+    environment:
+      # No authentication for development
+      MONGO_INITDB_DATABASE: code-snippet-vault
+
+volumes:
+  mongodb_data:

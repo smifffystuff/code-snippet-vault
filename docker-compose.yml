@@ -1,0 +1,44 @@
+version: '3.8'
+
+services:
+  # MongoDB Database
+  backend:
+    build:
+      context: .
+      target: backend
+    container_name: code-vault-api
+    restart: unless-stopped
+    environment:
+      NODE_ENV: production
+      PORT: 5000
+      MONGODB_URI: mongodb://admin:password123@mongodb:27017/code-snippet-vault?authSource=admin
+      FRONTEND_URL: http://localhost:3000
+    ports:
+      - "5000:5000"
+    depends_on:
+      - mongodb
+    networks:
+      - code-vault-network
+
+  # Frontend App
+  frontend:
+    build:
+      context: .
+      target: frontend
+    container_name: code-vault-web
+    restart: unless-stopped
+    environment:
+      VITE_API_URL: http://localhost:5000/api
+    ports:
+      - "3000:80"
+    depends_on:
+      - backend
+    networks:
+      - code-vault-network
+
+volumes:
+  mongodb_data:
+
+networks:
+  code-vault-network:
+    driver: bridge
