@@ -170,7 +170,7 @@ export default async function handler(req, res) {
   }
 }
 
-// GET /api/snippet/[id] - Get a single snippet by ID
+// GET /api/snippets/[id] - Get a single snippet by ID
 async function handleGetById(req, res, id, user) {
   try {
     // Authenticated users can access their own snippets or public ones
@@ -200,7 +200,7 @@ async function handleGetById(req, res, id, user) {
   }
 }
 
-// PUT /api/snippet/[id] - Update a snippet
+// PUT /api/snippets/[id] - Update a snippet
 async function handlePutById(req, res, id, user) {
   try {
     const { title, description, language, code, tags, isPublic } = req.body;
@@ -243,7 +243,7 @@ async function handlePutById(req, res, id, user) {
   }
 }
 
-// DELETE /api/snippet/[id] - Delete a snippet
+// DELETE /api/snippets/[id] - Delete a snippet
 async function handleDeleteById(req, res, id, user) {
   try {
     const snippet = await Snippet.findOneAndDelete({ 
