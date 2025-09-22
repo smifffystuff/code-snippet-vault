@@ -128,7 +128,8 @@ router.post('/', requireAuth, validateSnippet, async (req, res) => {
       language: language.toLowerCase(),
       code,
       tags: tags ? tags.map(tag => tag.toLowerCase()) : [],
-      userId: req.user.id  // Associate snippet with authenticated user
+      userId: req.user.id,  // Associate snippet with authenticated user
+      userEmail: req.user.email || 'unknown@example.com'  // Store user's email
     });
 
     const savedSnippet = await snippet.save();

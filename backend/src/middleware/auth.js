@@ -28,11 +28,12 @@ const requireAuth = async (req, res, next) => {
     // Add user information to the request object
     req.user = {
       id: payload.sub,
+      email: payload.email || payload.email_address || null,
       sessionId: payload.sid,
       ...payload
     };
 
-    console.log('🔐 Authenticated user:', req.user.id);
+    console.log('🔐 Authenticated user:', req.user.id, 'Email:', req.user.email);
     next();
   } catch (error) {
     console.error('❌ Authentication error:', error.message);

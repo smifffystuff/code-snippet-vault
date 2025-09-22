@@ -8,6 +8,13 @@ const snippetSchema = new mongoose.Schema({
     required: [true, 'User ID is required'],
     index: true
   },
+  userEmail: {
+    type: String,
+    required: [true, 'User email is required'],
+    trim: true,
+    lowercase: true,
+    index: true
+  },
   title: {
     type: String,
     required: [true, 'Title is required'],
@@ -126,6 +133,7 @@ const authenticateUser = async (req) => {
     
     return {
       id: payload.sub,
+      email: payload.email || payload.email_address || 'unknown@example.com',
       sessionId: payload.sid,
       ...payload
     };
@@ -257,6 +265,7 @@ async function handlePost(req, res, user) {
 
     const snippet = new Snippet({
       userId: user.id, // Associate with authenticated user
+      userEmail: user.email, // Store user's email
       title,
       description,
       language: language.toLowerCase(),

@@ -32,6 +32,13 @@ const snippetSchema = new mongoose.Schema({
     required: [true, 'User ID is required'],
     index: true  // Index for efficient querying
   },
+  userEmail: {
+    type: String,
+    required: [true, 'User email is required'],
+    trim: true,
+    lowercase: true,
+    index: true  // Index for efficient querying by email
+  },
   createdAt: {
     type: Date,
     default: Date.now
