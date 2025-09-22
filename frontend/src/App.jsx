@@ -34,13 +34,10 @@ function PublicApp() {
   return (
     <Layout>
       <Routes>
-        <Route path="/" element={<Home />} />
-        <Route path="/snippet/:id" element={<SnippetDetail />} />
         <Route path="/sign-in/*" element={<SignInPage />} />
         <Route path="/sign-up/*" element={<SignUpPage />} />
-        {/* Redirect auth-required routes to sign in */}
-        <Route path="/create" element={<RedirectToSignIn />} />
-        <Route path="/snippet/:id/edit" element={<RedirectToSignIn />} />
+        {/* Redirect all other routes to sign in for unauthenticated users */}
+        <Route path="*" element={<RedirectToSignIn />} />
       </Routes>
     </Layout>
   );

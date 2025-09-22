@@ -5,10 +5,10 @@ const { validateSnippet, validateSnippetUpdate } = require('../middleware/valida
 const { requireAuth, optionalAuth } = require('../middleware/auth');
 
 // GET /api/snippets - Get all snippets with optional filtering and search
-// Using optionalAuth so public browsing works but we can filter by user if authenticated
-router.get('/', optionalAuth, async (req, res) => {
+// Require authentication - no anonymous access allowed
+router.get('/', requireAuth, async (req, res) => {
   console.log('Fetching snippets with query:', req.query);
-  console.log('User:', req.user ? req.user.id : 'Anonymous');
+  console.log('User:', req.user.id);
   try {
     const { 
       search, 
@@ -23,22 +23,19 @@ router.get('/', optionalAuth, async (req, res) => {
 
     let query = {};
 
-    // Handle different views
+    // Handle different views (all users are now authenticated)
     if (view === 'public') {
       // Show only public snippets
       query.isPublic = true;
-    } else if (view === 'all' && req.user) {
+    } else if (view === 'all') {
       // Show user's snippets AND public snippets
       query.$or = [
         { userId: req.user.id },
         { isPublic: true }
       ];
-    } else if (req.user) {
+    } else {
       // Default: show only user's snippets (my snippets)
       query.userId = req.user.id;
-    } else {
-      // Anonymous users can only see public snippets
-      query.isPublic = true;
     }
 
     // Text search in title and description using regex
