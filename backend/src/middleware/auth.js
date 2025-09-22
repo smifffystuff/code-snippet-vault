@@ -28,10 +28,18 @@ const requireAuth = async (req, res, next) => {
     // Add user information to the request object
     req.user = {
       id: payload.sub,
-      email: payload.email || payload.email_address || null,
       sessionId: payload.sid,
       ...payload
     };
+
+    // Fetch user email from Clerk API
+    try {
+      const user = await clerkClient.users.getUser(payload.sub);
+      req.user.email = user.emailAddresses?.[0]?.emailAddress || 'unknown@example.com';
+    } catch (emailError) {
+      console.warn('⚠️ Could not fetch user email from Clerk:', emailError.message);
+      req.user.email = 'unknown@example.com';
+    }
 
     console.log('🔐 Authenticated user:', req.user.id, 'Email:', req.user.email);
     next();

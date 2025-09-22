@@ -98,13 +98,23 @@ const authenticateUser = async (req) => {
     if (!payload || !payload.sub) {
       throw new Error('Invalid token payload');
     }
-    
-    return {
+
+    const userInfo = {
       id: payload.sub,
-      email: payload.email || payload.email_address || 'unknown@example.com',
       sessionId: payload.sid,
       ...payload
     };
+
+    // Fetch user email from Clerk API
+    try {
+      const user = await clerkClient.users.getUser(payload.sub);
+      userInfo.email = user.emailAddresses?.[0]?.emailAddress || 'unknown@example.com';
+    } catch (emailError) {
+      console.warn('⚠️ Could not fetch user email from Clerk:', emailError.message);
+      userInfo.email = 'unknown@example.com';
+    }
+    
+    return userInfo;
   } catch (error) {
     console.error('❌ Authentication error:', error.message);
     throw new Error('Authentication failed');
