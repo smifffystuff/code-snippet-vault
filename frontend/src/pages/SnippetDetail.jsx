@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useParams, useNavigate, Link } from 'react-router-dom'
 import { ArrowLeft, Edit, Trash2, Copy, Calendar, Tag } from 'lucide-react'
+import { useUser } from '@clerk/clerk-react'
 import { snippetAPI } from '../services/api'
 import CodeBlock from '../components/CodeBlock'
 import toast from 'react-hot-toast'
@@ -8,6 +9,7 @@ import toast from 'react-hot-toast'
 const SnippetDetail = () => {
   const { id } = useParams()
   const navigate = useNavigate()
+  const { user } = useUser()
   const [snippet, setSnippet] = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
@@ -85,6 +87,9 @@ const SnippetDetail = () => {
     )
   }
 
+  // Check if current user owns this snippet
+  const isOwner = user && snippet.userId === user.id
+
   return (
     <div className="max-w-4xl mx-auto">
       {/* Header */}
@@ -104,20 +109,24 @@ const SnippetDetail = () => {
             <Copy className="h-4 w-4" />
             <span>Copy</span>
           </button>
-          <Link
-            to={`/snippet/${snippet._id}/edit`}
-            className="btn-outline flex items-center space-x-2"
-          >
-            <Edit className="h-4 w-4" />
-            <span>Edit</span>
-          </Link>
-          <button
-            onClick={handleDelete}
-            className="btn-outline text-red-600 border-red-300 hover:bg-red-50 flex items-center space-x-2"
-          >
-            <Trash2 className="h-4 w-4" />
-            <span>Delete</span>
-          </button>
+          {isOwner && (
+            <>
+              <Link
+                to={`/snippet/${snippet._id}/edit`}
+                className="btn-outline flex items-center space-x-2"
+              >
+                <Edit className="h-4 w-4" />
+                <span>Edit</span>
+              </Link>
+              <button
+                onClick={handleDelete}
+                className="btn-outline text-red-600 border-red-300 hover:bg-red-50 flex items-center space-x-2"
+              >
+                <Trash2 className="h-4 w-4" />
+                <span>Delete</span>
+              </button>
+            </>
+          )}
         </div>
       </div>
 

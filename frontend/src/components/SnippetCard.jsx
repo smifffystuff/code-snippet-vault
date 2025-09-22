@@ -1,9 +1,12 @@
 import { Link } from 'react-router-dom'
 import { Calendar, Edit, Eye, Trash2, Copy } from 'lucide-react'
+import { useUser } from '@clerk/clerk-react'
 import CodeBlock from './CodeBlock'
 import toast from 'react-hot-toast'
 
 const SnippetCard = ({ snippet, onDelete, showActions = true }) => {
+  const { user } = useUser()
+  
   const formatDate = (dateString) => {
     return new Date(dateString).toLocaleDateString('en-US', {
       year: 'numeric',
@@ -26,6 +29,9 @@ const SnippetCard = ({ snippet, onDelete, showActions = true }) => {
       onDelete(snippet._id)
     }
   }
+
+  // Check if current user owns this snippet
+  const isOwner = user && snippet.userId === user.id
 
   return (
     <div className="card hover:shadow-md transition-shadow duration-200">
@@ -61,20 +67,24 @@ const SnippetCard = ({ snippet, onDelete, showActions = true }) => {
             >
               <Eye className="h-4 w-4" />
             </Link>
-            <Link
-              to={`/snippet/${snippet._id}/edit`}
-              className="p-2 text-gray-400 hover:text-primary-600 transition-colors"
-              title="Edit snippet"
-            >
-              <Edit className="h-4 w-4" />
-            </Link>
-            <button
-              onClick={handleDelete}
-              className="p-2 text-gray-400 hover:text-red-600 transition-colors"
-              title="Delete snippet"
-            >
-              <Trash2 className="h-4 w-4" />
-            </button>
+            {isOwner && (
+              <>
+                <Link
+                  to={`/snippet/${snippet._id}/edit`}
+                  className="p-2 text-gray-400 hover:text-primary-600 transition-colors"
+                  title="Edit snippet"
+                >
+                  <Edit className="h-4 w-4" />
+                </Link>
+                <button
+                  onClick={handleDelete}
+                  className="p-2 text-gray-400 hover:text-red-600 transition-colors"
+                  title="Delete snippet"
+                >
+                  <Trash2 className="h-4 w-4" />
+                </button>
+              </>
+            )}
           </div>
         )}
       </div>
