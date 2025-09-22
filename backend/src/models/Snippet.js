@@ -27,6 +27,11 @@ const snippetSchema = new mongoose.Schema({
     trim: true,
     lowercase: true
   }],
+  userId: {
+    type: String,
+    required: [true, 'User ID is required'],
+    index: true  // Index for efficient querying
+  },
   createdAt: {
     type: Date,
     default: Date.now
@@ -44,6 +49,13 @@ snippetSchema.pre('save', function(next) {
 });
 
 // Create indexes for search performance (avoiding text index due to language conflicts)
+// User-specific indexes for efficient queries
+snippetSchema.index({ userId: 1, createdAt: -1 }, { background: true });
+snippetSchema.index({ userId: 1, title: 1 }, { background: true });
+snippetSchema.index({ userId: 1, language: 1 }, { background: true });
+snippetSchema.index({ userId: 1, tags: 1 }, { background: true });
+
+// General indexes for search within user data
 snippetSchema.index({ title: 1 }, { background: true });
 snippetSchema.index({ description: 1 }, { background: true });
 snippetSchema.index({ language: 1 }, { background: true });

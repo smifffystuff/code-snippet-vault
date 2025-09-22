@@ -1,7 +1,10 @@
 import { Link } from 'react-router-dom'
-import { Code2, Plus, Search } from 'lucide-react'
+import { UserButton, useUser } from '@clerk/clerk-react'
+import { Code2, Plus } from 'lucide-react'
 
 const Layout = ({ children }) => {
+  const { user } = useUser()
+  
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
@@ -29,6 +32,20 @@ const Layout = ({ children }) => {
                 <Plus className="h-4 w-4" />
                 <span>New Snippet</span>
               </Link>
+              
+              {/* User Info and Avatar */}
+              <div className="flex items-center space-x-3 ml-4 pl-4 border-l border-gray-200">
+                <span className="text-sm text-gray-600">
+                  Welcome, {user?.firstName || user?.emailAddresses[0]?.emailAddress}
+                </span>
+                <UserButton 
+                  appearance={{
+                    elements: {
+                      avatarBox: "h-8 w-8"
+                    }
+                  }}
+                />
+              </div>
             </nav>
           </div>
         </div>

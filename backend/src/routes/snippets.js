@@ -2,10 +2,13 @@ const express = require('express');
 const router = express.Router();
 const Snippet = require('../models/Snippet');
 const { validateSnippet, validateSnippetUpdate } = require('../middleware/validation');
+const { requireAuth, optionalAuth } = require('../middleware/auth');
 
 // GET /api/snippets - Get all snippets with optional filtering and search
-router.get('/', async (req, res) => {
+// Using optionalAuth so public browsing works but we can filter by user if authenticated
+router.get('/', optionalAuth, async (req, res) => {
   console.log('Fetching snippets with query:', req.query);
+  console.log('User:', req.user ? req.user.id : 'Anonymous');
   try {
     const { 
       search, 
@@ -14,10 +17,27 @@ router.get('/', async (req, res) => {
       page = 1, 
       limit = 20,
       sortBy = 'createdAt',
-      sortOrder = 'desc'
+      sortOrder = 'desc',
+      mySnippets = false // New parameter to filter user's own snippets
     } = req.query;
 
     let query = {};
+
+    // If user is authenticated and wants only their snippets
+    if (req.user && mySnippets === 'true') {
+      query.userId = req.user.id;
+    } else if (req.user && !mySnippets) {
+      // If authenticated but viewing all, still show only user's snippets for now
+      // Later we can make this configurable for public/private snippets
+      query.userId = req.user.id;
+    } else if (!req.user) {
+      // For anonymous users, return empty array for now
+      // Later we can show public snippets
+      return res.json({
+        snippets: [],
+        pagination: { page: 1, limit: 20, total: 0, pages: 0 }
+      });
+    }
 
     // Text search in title and description using regex
     if (search) {
@@ -72,9 +92,13 @@ router.get('/', async (req, res) => {
 });
 
 // GET /api/snippets/:id - Get a single snippet by ID
-router.get('/:id', async (req, res) => {
+// GET /api/snippets/:id - Get a single snippet by ID
+router.get('/:id', requireAuth, async (req, res) => {
   try {
-    const snippet = await Snippet.findById(req.params.id).select('-__v');
+    const snippet = await Snippet.findOne({ 
+      _id: req.params.id,
+      userId: req.user.id  // Ensure user can only access their own snippets
+    }).select('-__v');
     
     if (!snippet) {
       return res.status(404).json({ error: 'Snippet not found' });
@@ -93,7 +117,8 @@ router.get('/:id', async (req, res) => {
 });
 
 // POST /api/snippets - Create a new snippet
-router.post('/', validateSnippet, async (req, res) => {
+// POST /api/snippets - Create a new snippet
+router.post('/', requireAuth, validateSnippet, async (req, res) => {
   try {
     const { title, description, language, code, tags } = req.body;
 
@@ -102,7 +127,8 @@ router.post('/', validateSnippet, async (req, res) => {
       description,
       language: language.toLowerCase(),
       code,
-      tags: tags ? tags.map(tag => tag.toLowerCase()) : []
+      tags: tags ? tags.map(tag => tag.toLowerCase()) : [],
+      userId: req.user.id  // Associate snippet with authenticated user
     });
 
     const savedSnippet = await snippet.save();
@@ -121,7 +147,8 @@ router.post('/', validateSnippet, async (req, res) => {
 });
 
 // PUT /api/snippets/:id - Update a snippet
-router.put('/:id', validateSnippetUpdate, async (req, res) => {
+// PUT /api/snippets/:id - Update a snippet
+router.put('/:id', requireAuth, validateSnippetUpdate, async (req, res) => {
   try {
     const { title, description, language, code, tags } = req.body;
 
@@ -134,8 +161,8 @@ router.put('/:id', validateSnippetUpdate, async (req, res) => {
       updatedAt: Date.now()
     };
 
-    const snippet = await Snippet.findByIdAndUpdate(
-      req.params.id,
+    const snippet = await Snippet.findOneAndUpdate(
+      { _id: req.params.id, userId: req.user.id },  // Ensure user can only update their own snippets
       updateData,
       { new: true, runValidators: true }
     ).select('-__v');
@@ -162,9 +189,12 @@ router.put('/:id', validateSnippetUpdate, async (req, res) => {
 });
 
 // DELETE /api/snippets/:id - Delete a snippet
-router.delete('/:id', async (req, res) => {
+router.delete('/:id', requireAuth, async (req, res) => {
   try {
-    const snippet = await Snippet.findByIdAndDelete(req.params.id);
+    const snippet = await Snippet.findOneAndDelete({ 
+      _id: req.params.id, 
+      userId: req.user.id  // Ensure user can only delete their own snippets
+    });
 
     if (!snippet) {
       return res.status(404).json({ error: 'Snippet not found' });
@@ -183,17 +213,19 @@ router.delete('/:id', async (req, res) => {
 });
 
 // GET /api/snippets/stats/summary - Get statistics about snippets
-router.get('/stats/summary', async (req, res) => {
+router.get('/stats/summary', requireAuth, async (req, res) => {
   try {
-    const totalSnippets = await Snippet.countDocuments();
+    const totalSnippets = await Snippet.countDocuments({ userId: req.user.id });
     
     const languageStats = await Snippet.aggregate([
+      { $match: { userId: req.user.id } },  // Filter by user
       { $group: { _id: '$language', count: { $sum: 1 } } },
       { $sort: { count: -1 } },
       { $limit: 10 }
     ]);
 
     const tagStats = await Snippet.aggregate([
+      { $match: { userId: req.user.id } },  // Filter by user
       { $unwind: '$tags' },
       { $group: { _id: '$tags', count: { $sum: 1 } } },
       { $sort: { count: -1 } },

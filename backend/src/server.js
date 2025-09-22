@@ -3,6 +3,7 @@ const mongoose = require('mongoose');
 const cors = require('cors');
 const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
+const { clerkClient } = require('@clerk/clerk-sdk-node');
 require('dotenv').config();
 
 const snippetRoutes = require('./routes/snippets');
@@ -10,6 +11,11 @@ const errorHandler = require('./middleware/errorHandler');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
+
+// Configure Clerk
+if (!process.env.CLERK_SECRET_KEY) {
+  console.warn('⚠️ CLERK_SECRET_KEY not found. Authentication will not work.');
+}
 
 // Security middleware
 app.use(helmet());
