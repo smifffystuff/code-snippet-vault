@@ -94,16 +94,21 @@ router.get('/', optionalAuth, async (req, res) => {
 });
 
 // GET /api/snippets/:id - Get a single snippet by ID
-// GET /api/snippets/:id - Get a single snippet by ID
 router.get('/:id', requireAuth, async (req, res) => {
   try {
-    const snippet = await Snippet.findOne({ 
+    // Authenticated users can access their own snippets or public ones
+    const query = {
       _id: req.params.id,
-      userId: req.user.id  // Ensure user can only access their own snippets
-    }).select('-__v');
+      $or: [
+        { userId: req.user.id },
+        { isPublic: true }
+      ]
+    };
+    
+    const snippet = await Snippet.findOne(query).select('-__v');
     
     if (!snippet) {
-      return res.status(404).json({ error: 'Snippet not found' });
+      return res.status(404).json({ error: 'Snippet not found or access denied' });
     }
 
     res.json(snippet);
