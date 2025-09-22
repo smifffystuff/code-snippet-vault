@@ -1,7 +1,13 @@
 const mongoose = require('mongoose');
+const { clerkClient } = require('@clerk/clerk-sdk-node');
 
 // Define Snippet model inline to avoid import issues in Vercel
 const snippetSchema = new mongoose.Schema({
+  userId: {
+    type: String,
+    required: [true, 'User ID is required'],
+    index: true
+  },
   title: {
     type: String,
     required: [true, 'Title is required'],
@@ -44,7 +50,9 @@ snippetSchema.pre('save', function(next) {
   next();
 });
 
-// Create indexes for search performance
+// Create indexes for search performance (with user-specific optimization)
+snippetSchema.index({ userId: 1, createdAt: -1 }, { background: true });
+snippetSchema.index({ userId: 1, title: 1 }, { background: true });
 snippetSchema.index({ title: 1 }, { background: true });
 snippetSchema.index({ description: 1 }, { background: true });
 snippetSchema.index({ language: 1 }, { background: true });
@@ -68,11 +76,38 @@ const connectDB = async () => {
   }
 };
 
+// Authentication middleware for serverless
+const authenticateUser = async (req) => {
+  try {
+    const authHeader = req.headers.authorization;
+    
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      throw new Error('No valid authorization header');
+    }
+    
+    const token = authHeader.substring(7);
+    const payload = await clerkClient.verifyToken(token);
+    
+    if (!payload || !payload.sub) {
+      throw new Error('Invalid token payload');
+    }
+    
+    return {
+      id: payload.sub,
+      sessionId: payload.sid,
+      ...payload
+    };
+  } catch (error) {
+    console.error('❌ Authentication error:', error.message);
+    throw new Error('Authentication failed');
+  }
+};
+
 export default async function handler(req, res) {
   // Set CORS headers
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
 
   if (req.method === 'OPTIONS') {
     res.status(200).end();
@@ -82,6 +117,10 @@ export default async function handler(req, res) {
   try {
     await connectDB();
 
+    // Authenticate user for all operations
+    const user = await authenticateUser(req);
+    console.log('🔐 Authenticated user:', user.id);
+
     const { id } = req.query;
 
     if (!id) {
@@ -90,27 +129,34 @@ export default async function handler(req, res) {
 
     switch (req.method) {
       case 'GET':
-        return await handleGetById(req, res, id);
+        return await handleGetById(req, res, id, user);
       case 'PUT':
-        return await handlePutById(req, res, id);
+        return await handlePutById(req, res, id, user);
       case 'DELETE':
-        return await handleDeleteById(req, res, id);
+        return await handleDeleteById(req, res, id, user);
       default:
         return res.status(405).json({ error: 'Method not allowed' });
     }
   } catch (error) {
     console.error('API Error:', error);
+    
+    if (error.message === 'Authentication failed') {
+      return res.status(401).json({ error: 'Authentication required' });
+    }
     return res.status(500).json({ error: 'Internal server error' });
   }
 }
 
 // GET /api/snippet/[id] - Get a single snippet by ID
-async function handleGetById(req, res, id) {
+async function handleGetById(req, res, id, user) {
   try {
-    const snippet = await Snippet.findById(id).select('-__v');
+    const snippet = await Snippet.findOne({ 
+      _id: id, 
+      userId: user.id // Ensure user can only access their own snippets
+    }).select('-__v');
     
     if (!snippet) {
-      return res.status(404).json({ error: 'Snippet not found' });
+      return res.status(404).json({ error: 'Snippet not found or access denied' });
     }
 
     res.json(snippet);
@@ -126,7 +172,7 @@ async function handleGetById(req, res, id) {
 }
 
 // PUT /api/snippet/[id] - Update a snippet
-async function handlePutById(req, res, id) {
+async function handlePutById(req, res, id, user) {
   try {
     const { title, description, language, code, tags } = req.body;
 
@@ -139,16 +185,17 @@ async function handlePutById(req, res, id) {
       updatedAt: Date.now()
     };
 
-    const snippet = await Snippet.findByIdAndUpdate(
-      id,
+    const snippet = await Snippet.findOneAndUpdate(
+      { _id: id, userId: user.id }, // Ensure user can only update their own snippets
       updateData,
       { new: true, runValidators: true }
     ).select('-__v');
 
     if (!snippet) {
-      return res.status(404).json({ error: 'Snippet not found' });
+      return res.status(404).json({ error: 'Snippet not found or access denied' });
     }
 
+    console.log('✅ Updated snippet for user:', user.id);
     res.json(snippet);
   } catch (error) {
     console.error('Error updating snippet:', error);
@@ -167,14 +214,18 @@ async function handlePutById(req, res, id) {
 }
 
 // DELETE /api/snippet/[id] - Delete a snippet
-async function handleDeleteById(req, res, id) {
+async function handleDeleteById(req, res, id, user) {
   try {
-    const snippet = await Snippet.findByIdAndDelete(id);
+    const snippet = await Snippet.findOneAndDelete({ 
+      _id: id, 
+      userId: user.id // Ensure user can only delete their own snippets
+    });
 
     if (!snippet) {
-      return res.status(404).json({ error: 'Snippet not found' });
+      return res.status(404).json({ error: 'Snippet not found or access denied' });
     }
 
+    console.log('✅ Deleted snippet for user:', user.id);
     res.json({ message: 'Snippet deleted successfully' });
   } catch (error) {
     console.error('Error deleting snippet:', error);

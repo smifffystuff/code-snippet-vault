@@ -1,7 +1,13 @@
 const mongoose = require('mongoose');
+const { clerkClient } = require('@clerk/clerk-sdk-node');
 
 // Define Snippet model inline to avoid import issues in Vercel
 const snippetSchema = new mongoose.Schema({
+  userId: {
+    type: String,
+    required: [true, 'User ID is required'],
+    index: true
+  },
   title: {
     type: String,
     required: [true, 'Title is required'],
@@ -44,7 +50,9 @@ snippetSchema.pre('save', function(next) {
   next();
 });
 
-// Create indexes for search performance
+// Create indexes for search performance (with user-specific optimization)
+snippetSchema.index({ userId: 1, createdAt: -1 }, { background: true });
+snippetSchema.index({ userId: 1, language: 1 }, { background: true });
 snippetSchema.index({ title: 1 }, { background: true });
 snippetSchema.index({ description: 1 }, { background: true });
 snippetSchema.index({ language: 1 }, { background: true });
@@ -68,11 +76,38 @@ const connectDB = async () => {
   }
 };
 
+// Authentication middleware for serverless
+const authenticateUser = async (req) => {
+  try {
+    const authHeader = req.headers.authorization;
+    
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      throw new Error('No valid authorization header');
+    }
+    
+    const token = authHeader.substring(7);
+    const payload = await clerkClient.verifyToken(token);
+    
+    if (!payload || !payload.sub) {
+      throw new Error('Invalid token payload');
+    }
+    
+    return {
+      id: payload.sub,
+      sessionId: payload.sid,
+      ...payload
+    };
+  } catch (error) {
+    console.error('❌ Authentication error:', error.message);
+    throw new Error('Authentication failed');
+  }
+};
+
 export default async function handler(req, res) {
   // Set CORS headers
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
 
   if (req.method === 'OPTIONS') {
     res.status(200).end();
@@ -86,15 +121,22 @@ export default async function handler(req, res) {
   try {
     await connectDB();
 
-    const totalSnippets = await Snippet.countDocuments();
+    // Authenticate user
+    const user = await authenticateUser(req);
+    console.log('🔐 Getting stats for user:', user.id);
+
+    // Get stats for current user only
+    const totalSnippets = await Snippet.countDocuments({ userId: user.id });
     
     const languageStats = await Snippet.aggregate([
+      { $match: { userId: user.id } }, // Filter by current user
       { $group: { _id: '$language', count: { $sum: 1 } } },
       { $sort: { count: -1 } },
       { $limit: 10 }
     ]);
 
     const tagStats = await Snippet.aggregate([
+      { $match: { userId: user.id } }, // Filter by current user
       { $unwind: '$tags' },
       { $group: { _id: '$tags', count: { $sum: 1 } } },
       { $sort: { count: -1 } },
@@ -108,6 +150,11 @@ export default async function handler(req, res) {
     });
   } catch (error) {
     console.error('Error fetching stats:', error);
+    
+    if (error.message === 'Authentication failed') {
+      return res.status(401).json({ error: 'Authentication required' });
+    }
+    
     res.status(500).json({ error: 'Failed to fetch statistics' });
   }
 }
