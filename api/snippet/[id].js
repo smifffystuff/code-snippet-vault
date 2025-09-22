@@ -41,6 +41,11 @@ const snippetSchema = new mongoose.Schema({
     trim: true,
     lowercase: true
   }],
+  isPublic: {
+    type: Boolean,
+    default: false,
+    index: true
+  },
   createdAt: {
     type: Date,
     default: Date.now
@@ -168,10 +173,16 @@ export default async function handler(req, res) {
 // GET /api/snippet/[id] - Get a single snippet by ID
 async function handleGetById(req, res, id, user) {
   try {
-    const snippet = await Snippet.findOne({ 
-      _id: id, 
-      userId: user.id // Ensure user can only access their own snippets
-    }).select('-__v');
+    // Authenticated users can access their own snippets or public ones
+    const query = {
+      _id: id,
+      $or: [
+        { userId: user.id },
+        { isPublic: true }
+      ]
+    };
+    
+    const snippet = await Snippet.findOne(query).select('-__v');
     
     if (!snippet) {
       return res.status(404).json({ error: 'Snippet not found or access denied' });
@@ -192,7 +203,7 @@ async function handleGetById(req, res, id, user) {
 // PUT /api/snippet/[id] - Update a snippet
 async function handlePutById(req, res, id, user) {
   try {
-    const { title, description, language, code, tags } = req.body;
+    const { title, description, language, code, tags, isPublic } = req.body;
 
     const updateData = {
       ...(title && { title }),
@@ -200,6 +211,7 @@ async function handlePutById(req, res, id, user) {
       ...(language && { language: language.toLowerCase() }),
       ...(code && { code }),
       ...(tags && { tags: tags.map(tag => tag.toLowerCase()) }),
+      ...(isPublic !== undefined && { isPublic: Boolean(isPublic) }),
       updatedAt: Date.now()
     };
 

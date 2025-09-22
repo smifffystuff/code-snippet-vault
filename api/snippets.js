@@ -15,6 +15,11 @@ const snippetSchema = new mongoose.Schema({
     lowercase: true,
     index: true
   },
+  isPublic: {
+    type: Boolean,
+    default: false,
+    index: true
+  },
   title: {
     type: String,
     required: [true, 'Title is required'],
@@ -62,6 +67,13 @@ snippetSchema.index({ userId: 1, createdAt: -1 }, { background: true });
 snippetSchema.index({ userId: 1, title: 1 }, { background: true });
 snippetSchema.index({ userId: 1, language: 1 }, { background: true });
 snippetSchema.index({ userId: 1, tags: 1 }, { background: true });
+
+// Public snippet indexes for community features
+snippetSchema.index({ isPublic: 1, createdAt: -1 }, { background: true });
+snippetSchema.index({ isPublic: 1, language: 1 }, { background: true });
+snippetSchema.index({ isPublic: 1, tags: 1 }, { background: true });
+
+// General indexes
 snippetSchema.index({ title: 1 }, { background: true });
 snippetSchema.index({ description: 1 }, { background: true });
 snippetSchema.index({ language: 1 }, { background: true });
@@ -204,19 +216,37 @@ async function handleGet(req, res, user) {
       page = 1, 
       limit = 20,
       sortBy = 'createdAt',
-      sortOrder = 'desc'
+      sortOrder = 'desc',
+      view = 'my'
     } = req.query;
 
-    // Start with user-specific query
-    let query = { userId: user.id };
+    let query = {};
+    
+    // Determine query based on view (all views require authentication)
+    if (view === 'my') {
+      query.userId = user.id;
+    } else if (view === 'public') {
+      query.isPublic = true;
+    } else if (view === 'all') {
+      // Authenticated users can see their own snippets + public ones
+      query = {
+        $or: [
+          { userId: user.id },
+          { isPublic: true }
+        ]
+      };
+    }
 
     // Text search in title and description using regex
     if (search) {
       const searchRegex = new RegExp(search, 'i'); // Case-insensitive regex
-      query.$or = [
-        { title: searchRegex },
-        { description: searchRegex }
-      ];
+      query.$and = query.$and || [];
+      query.$and.push({
+        $or: [
+          { title: searchRegex },
+          { description: searchRegex }
+        ]
+      });
     }
 
     // Filter by language
@@ -265,7 +295,7 @@ async function handleGet(req, res, user) {
 // POST /api/snippets - Create a new snippet
 async function handlePost(req, res, user) {
   try {
-    const { title, description, language, code, tags } = req.body;
+    const { title, description, language, code, tags, isPublic = false } = req.body;
 
     // Validate input
     const errors = validateSnippet(req.body);
@@ -280,11 +310,12 @@ async function handlePost(req, res, user) {
       description,
       language: language.toLowerCase(),
       code,
-      tags: tags ? tags.map(tag => tag.toLowerCase()) : []
+      tags: tags ? tags.map(tag => tag.toLowerCase()) : [],
+      isPublic: Boolean(isPublic)
     });
 
     const savedSnippet = await snippet.save();
-    console.log('✅ Created snippet for user:', user.id);
+    console.log('✅ Created snippet for user:', user.id, 'isPublic:', isPublic);
     
     res.status(201).json(savedSnippet);
   } catch (error) {
@@ -308,7 +339,7 @@ async function handlePut(req, res, user) {
       return res.status(400).json({ error: 'Snippet ID is required' });
     }
 
-    const { title, description, language, code, tags } = req.body;
+    const { title, description, language, code, tags, isPublic } = req.body;
 
     const updateData = {
       ...(title && { title }),
@@ -316,6 +347,7 @@ async function handlePut(req, res, user) {
       ...(language && { language: language.toLowerCase() }),
       ...(code && { code }),
       ...(tags && { tags: tags.map(tag => tag.toLowerCase()) }),
+      ...(isPublic !== undefined && { isPublic: Boolean(isPublic) }),
       updatedAt: Date.now()
     };
 

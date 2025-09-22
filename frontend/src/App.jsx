@@ -30,15 +30,27 @@ function AuthenticatedApp() {
   );
 }
 
+function PublicApp() {
+  return (
+    <Layout>
+      <Routes>
+        <Route path="/" element={<Home />} />
+        <Route path="/snippet/:id" element={<SnippetDetail />} />
+        <Route path="/sign-in/*" element={<SignInPage />} />
+        <Route path="/sign-up/*" element={<SignUpPage />} />
+        {/* Redirect auth-required routes to sign in */}
+        <Route path="/create" element={<RedirectToSignIn />} />
+        <Route path="/snippet/:id/edit" element={<RedirectToSignIn />} />
+      </Routes>
+    </Layout>
+  );
+}
+
 function App() {
   return (
     <>
       <SignedOut>
-        <Routes>
-          <Route path="/sign-in/*" element={<SignInPage />} />
-          <Route path="/sign-up/*" element={<SignUpPage />} />
-          <Route path="*" element={<RedirectToSignIn />} />
-        </Routes>
+        <PublicApp />
       </SignedOut>
       
       <SignedIn>

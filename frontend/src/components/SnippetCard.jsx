@@ -84,6 +84,11 @@ const SnippetCard = ({ snippet, onDelete, showActions = true }) => {
         <span className="language-badge">
           {snippet.language}
         </span>
+        {snippet.isPublic && (
+          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+            Public
+          </span>
+        )}
         {snippet.tags && snippet.tags.length > 0 && (
           <div className="flex flex-wrap gap-1">
             {snippet.tags.slice(0, 3).map((tag, index) => (
@@ -114,6 +119,11 @@ const SnippetCard = ({ snippet, onDelete, showActions = true }) => {
         <div className="flex items-center space-x-1">
           <Calendar className="h-4 w-4" />
           <span>Created {formatDate(snippet.createdAt)}</span>
+          {snippet.isPublic && snippet.userEmail && (
+            <span className="ml-2 text-xs">
+              by {snippet.userEmail}
+            </span>
+          )}
         </div>
         
         {snippet.updatedAt !== snippet.createdAt && (

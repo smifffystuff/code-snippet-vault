@@ -90,7 +90,7 @@ export const snippetAPI = {
 
   // Get a single snippet by ID
   getById: async (id) => {
-    const response = await api.get(`/snippet/${id}`);
+    const response = await api.get(`/snippets/${id}`);
     return response.data;
   },
 
@@ -102,19 +102,19 @@ export const snippetAPI = {
 
   // Update an existing snippet
   update: async (id, snippetData) => {
-    const response = await api.put(`/snippet/${id}`, snippetData);
+    const response = await api.put(`/snippets/${id}`, snippetData);
     return response.data;
   },
 
   // Delete a snippet
   delete: async (id) => {
-    const response = await api.delete(`/snippet/${id}`);
+    const response = await api.delete(`/snippets/${id}`);
     return response.data;
   },
 
   // Get statistics
-  getStats: async () => {
-    const response = await api.get('/stats');
+  getStats: async (view = 'my') => {
+    const response = await api.get('/stats', { params: { view } });
     return response.data;
   },
 

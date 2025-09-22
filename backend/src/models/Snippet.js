@@ -39,6 +39,11 @@ const snippetSchema = new mongoose.Schema({
     lowercase: true,
     index: true  // Index for efficient querying by email
   },
+  isPublic: {
+    type: Boolean,
+    default: false,
+    index: true  // Index for efficient public/private filtering
+  },
   createdAt: {
     type: Date,
     default: Date.now
@@ -61,6 +66,11 @@ snippetSchema.index({ userId: 1, createdAt: -1 }, { background: true });
 snippetSchema.index({ userId: 1, title: 1 }, { background: true });
 snippetSchema.index({ userId: 1, language: 1 }, { background: true });
 snippetSchema.index({ userId: 1, tags: 1 }, { background: true });
+
+// Public snippet indexes for community features
+snippetSchema.index({ isPublic: 1, createdAt: -1 }, { background: true });
+snippetSchema.index({ isPublic: 1, language: 1 }, { background: true });
+snippetSchema.index({ isPublic: 1, tags: 1 }, { background: true });
 
 // General indexes for search within user data
 snippetSchema.index({ title: 1 }, { background: true });

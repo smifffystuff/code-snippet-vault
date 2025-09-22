@@ -20,14 +20,15 @@ const CreateSnippet = () => {
     description: '',
     language: 'javascript',
     code: '',
-    tags: ''
+    tags: '',
+    isPublic: false
   })
 
   const handleChange = (e) => {
-    const { name, value } = e.target
+    const { name, value, type, checked } = e.target
     setFormData(prev => ({
       ...prev,
-      [name]: value
+      [name]: type === 'checkbox' ? checked : value
     }))
   }
 
@@ -55,7 +56,8 @@ const CreateSnippet = () => {
         tags: formData.tags
           .split(',')
           .map(tag => tag.trim())
-          .filter(tag => tag.length > 0)
+          .filter(tag => tag.length > 0),
+        isPublic: formData.isPublic
       }
 
       const newSnippet = await snippetAPI.create(snippetData)
@@ -115,6 +117,11 @@ const CreateSnippet = () => {
           
           <div className="flex items-center space-x-2 mb-4">
             <span className="language-badge">{formData.language}</span>
+            {formData.isPublic && (
+              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                Public
+              </span>
+            )}
             {formData.tags && (
               <div className="flex flex-wrap gap-1">
                 {formData.tags.split(',').map((tag, index) => (
@@ -209,6 +216,26 @@ const CreateSnippet = () => {
                   placeholder="e.g., async, utility, helper"
                   className="input-field"
                 />
+              </div>
+            </div>
+
+            {/* Public Toggle */}
+            <div className="mb-4">
+              <div className="flex items-center space-x-3">
+                <input
+                  type="checkbox"
+                  id="isPublic"
+                  name="isPublic"
+                  checked={formData.isPublic}
+                  onChange={handleChange}
+                  className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                />
+                <label htmlFor="isPublic" className="flex items-center text-sm font-medium text-gray-700">
+                  <span>Make this snippet public</span>
+                  <span className="ml-2 text-xs text-gray-500">
+                    (Anyone can view this snippet and see your email)
+                  </span>
+                </label>
               </div>
             </div>
 

@@ -41,6 +41,11 @@ const snippetSchema = new mongoose.Schema({
     trim: true,
     lowercase: true
   }],
+  isPublic: {
+    type: Boolean,
+    default: false,
+    index: true
+  },
   createdAt: {
     type: Date,
     default: Date.now
@@ -143,18 +148,37 @@ export default async function handler(req, res) {
     const user = await authenticateUser(req);
     console.log('🔐 Getting stats for user:', user.id);
 
-    // Get stats for current user only
-    const totalSnippets = await Snippet.countDocuments({ userId: user.id });
+    const { view = 'my' } = req.query;
+
+    let query = {};
+    
+    // Determine query based on view (all views require authentication)
+    if (view === 'my') {
+      query.userId = user.id;
+    } else if (view === 'public') {
+      query.isPublic = true;
+    } else if (view === 'all') {
+      // Authenticated users can see their own snippets + public ones
+      query = {
+        $or: [
+          { userId: user.id },
+          { isPublic: true }
+        ]
+      };
+    }
+
+    // Get stats based on the query
+    const totalSnippets = await Snippet.countDocuments(query);
     
     const languageStats = await Snippet.aggregate([
-      { $match: { userId: user.id } }, // Filter by current user
+      { $match: query },
       { $group: { _id: '$language', count: { $sum: 1 } } },
       { $sort: { count: -1 } },
       { $limit: 10 }
     ]);
 
     const tagStats = await Snippet.aggregate([
-      { $match: { userId: user.id } }, // Filter by current user
+      { $match: query },
       { $unwind: '$tags' },
       { $group: { _id: '$tags', count: { $sum: 1 } } },
       { $sort: { count: -1 } },
@@ -164,7 +188,8 @@ export default async function handler(req, res) {
     res.json({
       totalSnippets,
       topLanguages: languageStats,
-      topTags: tagStats
+      topTags: tagStats,
+      view
     });
   } catch (error) {
     console.error('Error fetching stats:', error);

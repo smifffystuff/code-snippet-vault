@@ -18,25 +18,27 @@ router.get('/', optionalAuth, async (req, res) => {
       limit = 20,
       sortBy = 'createdAt',
       sortOrder = 'desc',
-      mySnippets = false // New parameter to filter user's own snippets
+      view = 'my' // 'my' for user's snippets, 'public' for public snippets, 'all' for both
     } = req.query;
 
     let query = {};
 
-    // If user is authenticated and wants only their snippets
-    if (req.user && mySnippets === 'true') {
+    // Handle different views
+    if (view === 'public') {
+      // Show only public snippets
+      query.isPublic = true;
+    } else if (view === 'all' && req.user) {
+      // Show user's snippets AND public snippets
+      query.$or = [
+        { userId: req.user.id },
+        { isPublic: true }
+      ];
+    } else if (req.user) {
+      // Default: show only user's snippets (my snippets)
       query.userId = req.user.id;
-    } else if (req.user && !mySnippets) {
-      // If authenticated but viewing all, still show only user's snippets for now
-      // Later we can make this configurable for public/private snippets
-      query.userId = req.user.id;
-    } else if (!req.user) {
-      // For anonymous users, return empty array for now
-      // Later we can show public snippets
-      return res.json({
-        snippets: [],
-        pagination: { page: 1, limit: 20, total: 0, pages: 0 }
-      });
+    } else {
+      // Anonymous users can only see public snippets
+      query.isPublic = true;
     }
 
     // Text search in title and description using regex
@@ -120,8 +122,9 @@ router.get('/:id', requireAuth, async (req, res) => {
 // POST /api/snippets - Create a new snippet
 router.post('/', requireAuth, validateSnippet, async (req, res) => {
   try {
-    const { title, description, language, code, tags } = req.body;
+    const { title, description, language, code, tags, isPublic } = req.body;
 
+    console.log('Got snippet create', req.body)
     const snippet = new Snippet({
       title,
       description,
@@ -129,7 +132,8 @@ router.post('/', requireAuth, validateSnippet, async (req, res) => {
       code,
       tags: tags ? tags.map(tag => tag.toLowerCase()) : [],
       userId: req.user.id,  // Associate snippet with authenticated user
-      userEmail: req.user.email || 'unknown@example.com'  // Store user's email
+      userEmail: req.user.email || 'unknown@example.com',  // Store user's email
+      isPublic: Boolean(isPublic) || false  // Set public visibility
     });
 
     const savedSnippet = await snippet.save();
@@ -151,7 +155,7 @@ router.post('/', requireAuth, validateSnippet, async (req, res) => {
 // PUT /api/snippets/:id - Update a snippet
 router.put('/:id', requireAuth, validateSnippetUpdate, async (req, res) => {
   try {
-    const { title, description, language, code, tags } = req.body;
+    const { title, description, language, code, tags, isPublic } = req.body;
 
     const updateData = {
       ...(title && { title }),
@@ -159,6 +163,7 @@ router.put('/:id', requireAuth, validateSnippetUpdate, async (req, res) => {
       ...(language && { language: language.toLowerCase() }),
       ...(code && { code }),
       ...(tags && { tags: tags.map(tag => tag.toLowerCase()) }),
+      ...(isPublic !== undefined && { isPublic: Boolean(isPublic) }),
       updatedAt: Date.now()
     };
 
@@ -241,6 +246,73 @@ router.get('/stats/summary', requireAuth, async (req, res) => {
   } catch (error) {
     console.error('Error fetching stats:', error);
     res.status(500).json({ error: 'Failed to fetch statistics' });
+  }
+});
+
+// GET /api/snippets/public - Get public snippets (no auth required)
+router.get('/public', async (req, res) => {
+  try {
+    const { 
+      search, 
+      language, 
+      tags, 
+      page = 1, 
+      limit = 20,
+      sortBy = 'createdAt',
+      sortOrder = 'desc'
+    } = req.query;
+
+    let query = { isPublic: true };
+
+    // Text search in title and description using regex
+    if (search) {
+      const searchRegex = new RegExp(search, 'i');
+      query.$or = [
+        { title: searchRegex },
+        { description: searchRegex }
+      ];
+    }
+
+    // Filter by language
+    if (language) {
+      query.language = language.toLowerCase();
+    }
+
+    // Filter by tags
+    if (tags) {
+      const tagArray = tags.split(',').map(tag => tag.trim().toLowerCase());
+      query.tags = { $in: tagArray };
+    }
+
+    // Pagination
+    const pageNum = parseInt(page);
+    const limitNum = parseInt(limit);
+    const skip = (pageNum - 1) * limitNum;
+
+    // Sort options
+    const sortOptions = {};
+    sortOptions[sortBy] = sortOrder === 'asc' ? 1 : -1;
+
+    const snippets = await Snippet.find(query)
+      .sort(sortOptions)
+      .skip(skip)
+      .limit(limitNum)
+      .select('-__v');
+
+    const total = await Snippet.countDocuments(query);
+
+    res.json({
+      snippets,
+      pagination: {
+        page: pageNum,
+        limit: limitNum,
+        total,
+        pages: Math.ceil(total / limitNum)
+      }
+    });
+  } catch (error) {
+    console.error('Error fetching public snippets:', error);
+    res.status(500).json({ error: 'Failed to fetch public snippets' });
   }
 });
 

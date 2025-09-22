@@ -12,6 +12,7 @@ const Home = () => {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
   const [searchQuery, setSearchQuery] = useState('')
+  const [currentView, setCurrentView] = useState('my') // 'my', 'public', 'all'
   const [filters, setFilters] = useState({
     language: '',
     tags: '',
@@ -21,11 +22,12 @@ const Home = () => {
   const [pagination, setPagination] = useState({})
 
   // Memoize the filter object to prevent unnecessary re-renders
-  const memoizedFilters = useMemo(() => filters, [
+  const memoizedFilters = useMemo(() => ({ ...filters, view: currentView }), [
     filters.language,
     filters.tags,
     filters.sortBy,
-    filters.sortOrder
+    filters.sortOrder,
+    currentView
   ])
 
   const fetchSnippets = useCallback(async () => {
@@ -109,13 +111,56 @@ const Home = () => {
         <div>
           <h1 className="text-3xl font-bold text-gray-900">Code Snippets</h1>
           <p className="text-gray-600 mt-1">
-            {pagination.total ? `${pagination.total} snippet${pagination.total !== 1 ? 's' : ''}` : 'Your personal code library'}
+            {pagination.total 
+              ? `${pagination.total} snippet${pagination.total !== 1 ? 's' : ''} found`
+              : currentView === 'my' 
+                ? 'Your personal code library'
+                : currentView === 'public'
+                  ? 'Community shared snippets'
+                  : 'All available snippets'
+            }
           </p>
         </div>
         <Link to="/create" className="btn-primary flex items-center space-x-2 mt-4 sm:mt-0">
           <Plus className="h-4 w-4" />
           <span>New Snippet</span>
         </Link>
+      </div>
+
+      {/* View Switcher */}
+      <div className="border-b border-gray-200">
+        <nav className="flex space-x-8">
+          <button
+            onClick={() => setCurrentView('my')}
+            className={`py-2 px-1 border-b-2 font-medium text-sm ${
+              currentView === 'my'
+                ? 'border-blue-500 text-blue-600'
+                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+            }`}
+          >
+            My Snippets
+          </button>
+          <button
+            onClick={() => setCurrentView('public')}
+            className={`py-2 px-1 border-b-2 font-medium text-sm ${
+              currentView === 'public'
+                ? 'border-blue-500 text-blue-600'
+                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+            }`}
+          >
+            Public Snippets
+          </button>
+          <button
+            onClick={() => setCurrentView('all')}
+            className={`py-2 px-1 border-b-2 font-medium text-sm ${
+              currentView === 'all'
+                ? 'border-blue-500 text-blue-600'
+                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+            }`}
+          >
+            All Snippets
+          </button>
+        </nav>
       </div>
 
       {/* Search and Filters */}

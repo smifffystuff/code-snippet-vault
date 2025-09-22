@@ -33,7 +33,10 @@ const snippetSchema = Joi.object({
   
   tags: Joi.array()
     .items(Joi.string().trim())
-    .default([])
+    .default([]),
+  
+  isPublic: Joi.boolean()
+    .default(false)
 });
 
 const snippetUpdateSchema = Joi.object({
@@ -58,7 +61,9 @@ const snippetUpdateSchema = Joi.object({
   code: Joi.string(),
   
   tags: Joi.array()
-    .items(Joi.string().trim())
+    .items(Joi.string().trim()),
+  
+  isPublic: Joi.boolean()
 }).min(1); // At least one field must be provided for update
 
 const validateSnippet = (req, res, next) => {
