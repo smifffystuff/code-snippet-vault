@@ -80,23 +80,23 @@ const CreateSnippet = () => {
   return (
     <div className="max-w-4xl mx-auto">
       {/* Header */}
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-6 space-y-4 sm:space-y-0">
         <div className="flex items-center space-x-4">
           <button
             onClick={handleBack}
             className="btn-outline flex items-center space-x-2"
           >
             <ArrowLeft className="h-4 w-4" />
-            <span>Back</span>
+            <span className="hidden sm:inline">Back</span>
           </button>
-          <h1 className="text-2xl font-bold text-gray-900">Create New Snippet</h1>
+          <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Create New Snippet</h1>
         </div>
         
         <div className="flex items-center space-x-2">
           <button
             type="button"
             onClick={() => setShowPreview(!showPreview)}
-            className="btn-outline"
+            className="btn-outline flex-1 sm:flex-none"
           >
             {showPreview ? 'Edit' : 'Preview'}
           </button>
@@ -250,19 +250,19 @@ const CreateSnippet = () => {
                 value={formData.code}
                 onChange={handleChange}
                 placeholder="Paste your code here..."
-                rows={15}
-                className="input-field font-mono text-sm resize-none"
+                rows={12}
+                className="input-field font-mono text-sm resize-none min-h-[200px] sm:min-h-[300px]"
                 required
               />
             </div>
           </div>
 
           {/* Submit Button */}
-          <div className="flex justify-end">
+          <div className="flex flex-col sm:flex-row justify-end space-y-2 sm:space-y-0 sm:space-x-2">
             <button
               type="submit"
               disabled={loading}
-              className="btn-primary flex items-center space-x-2"
+              className="btn-primary flex items-center justify-center space-x-2 w-full sm:w-auto"
             >
               {loading ? (
                 <>

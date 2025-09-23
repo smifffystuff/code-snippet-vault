@@ -108,9 +108,9 @@ const Home = () => {
     <div className="space-y-6">
       {/* Page Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900">Code Snippets</h1>
-          <p className="text-gray-600 mt-1">
+        <div className="mb-4 sm:mb-0">
+          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Code Snippets</h1>
+          <p className="text-gray-600 text-sm sm:text-base mt-1">
             {pagination.total 
               ? `${pagination.total} snippet${pagination.total !== 1 ? 's' : ''} found`
               : currentView === 'my' 
@@ -121,7 +121,7 @@ const Home = () => {
             }
           </p>
         </div>
-        <Link to="/create" className="btn-primary flex items-center space-x-2 mt-4 sm:mt-0">
+        <Link to="/create" className="btn-primary flex items-center justify-center space-x-2 w-full sm:w-auto">
           <Plus className="h-4 w-4" />
           <span>New Snippet</span>
         </Link>
@@ -129,10 +129,10 @@ const Home = () => {
 
       {/* View Switcher */}
       <div className="border-b border-gray-200">
-        <nav className="flex space-x-8">
+        <nav className="flex space-x-4 sm:space-x-8 overflow-x-auto">
           <button
             onClick={() => setCurrentView('my')}
-            className={`py-2 px-1 border-b-2 font-medium text-sm ${
+            className={`py-2 px-1 border-b-2 font-medium text-sm whitespace-nowrap ${
               currentView === 'my'
                 ? 'border-blue-500 text-blue-600'
                 : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
@@ -142,7 +142,7 @@ const Home = () => {
           </button>
           <button
             onClick={() => setCurrentView('public')}
-            className={`py-2 px-1 border-b-2 font-medium text-sm ${
+            className={`py-2 px-1 border-b-2 font-medium text-sm whitespace-nowrap ${
               currentView === 'public'
                 ? 'border-blue-500 text-blue-600'
                 : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
@@ -152,7 +152,7 @@ const Home = () => {
           </button>
           <button
             onClick={() => setCurrentView('all')}
-            className={`py-2 px-1 border-b-2 font-medium text-sm ${
+            className={`py-2 px-1 border-b-2 font-medium text-sm whitespace-nowrap ${
               currentView === 'all'
                 ? 'border-blue-500 text-blue-600'
                 : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'

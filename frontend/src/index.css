@@ -49,11 +49,29 @@
   }
 
   .code-block {
-    @apply bg-gray-900 text-gray-100 p-4 rounded-lg overflow-x-auto font-mono text-sm leading-relaxed;
+    @apply bg-gray-900 text-gray-100 rounded-lg overflow-x-auto font-mono leading-relaxed;
+    padding: 0.75rem 1rem;
+    font-size: 0.875rem;
+    line-height: 1.5;
+  }
+
+  @media (min-width: 640px) {
+    .code-block {
+      padding: 1rem;
+      font-size: 0.875rem;
+      line-height: 1.6;
+    }
   }
 
   .card {
-    @apply bg-white rounded-lg shadow-sm border border-gray-200 p-6;
+    @apply bg-white rounded-lg shadow-sm border border-gray-200;
+    padding: 1rem;
+  }
+
+  @media (min-width: 640px) {
+    .card {
+      padding: 1.5rem;
+    }
   }
 
   .tag {
@@ -62,6 +80,56 @@
 
   .language-badge {
     @apply inline-block bg-gray-100 text-gray-700 px-2 py-1 rounded text-xs font-mono;
+  }
+
+  /* Mobile touch targets */
+  .touch-manipulation {
+    touch-action: manipulation;
+    min-height: 44px;
+    min-width: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  @media (max-width: 640px) {
+    .touch-manipulation {
+      min-height: 48px;
+      min-width: 48px;
+    }
+  }
+
+  /* Mobile grid improvements */
+  @media (max-width: 640px) {
+    .grid-cols-auto-fit {
+      grid-template-columns: 1fr;
+    }
+    
+    .space-x-8 > * + * {
+      margin-left: 1rem;
+    }
+    
+    /* Better mobile scrolling for tabs */
+    .overflow-x-auto {
+      -webkit-overflow-scrolling: touch;
+      scrollbar-width: none;
+      -ms-overflow-style: none;
+    }
+    
+    .overflow-x-auto::-webkit-scrollbar {
+      display: none;
+    }
+  }
+
+  /* Input improvements for mobile */
+  @media (max-width: 640px) {
+    .input-field {
+      font-size: 16px; /* Prevents zoom on iOS */
+    }
+    
+    textarea.input-field {
+      min-height: 200px;
+    }
   }
 }
 

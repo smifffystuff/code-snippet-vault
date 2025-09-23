@@ -56,15 +56,15 @@ const CodeBlock = ({ code, language = 'javascript', className = '', showLineNumb
 
   return (
     <div className={`relative ${className}`}>
-      <pre className={`code-block ${showLineNumbers ? 'line-numbers' : ''}`}>
-        <code className={`language-${normalizedLanguage}`}>
+      <pre className={`code-block ${showLineNumbers ? 'line-numbers' : ''} overflow-x-auto`}>
+        <code className={`language-${normalizedLanguage} text-sm sm:text-base`}>
           {code}
         </code>
       </pre>
       
       {/* Language badge */}
       <div className="absolute top-2 right-2">
-        <span className="language-badge">
+        <span className="language-badge text-xs">
           {language.toUpperCase()}
         </span>
       </div>

@@ -36,11 +36,11 @@ const SnippetCard = ({ snippet, onDelete, showActions = true }) => {
   return (
     <div className="card hover:shadow-md transition-shadow duration-200">
       {/* Header */}
-      <div className="flex items-start justify-between mb-4">
-        <div className="flex-1">
+      <div className="flex flex-col sm:flex-row sm:items-start justify-between mb-4">
+        <div className="flex-1 mb-3 sm:mb-0">
           <Link 
             to={`/snippet/${snippet._id}`}
-            className="text-lg font-semibold text-gray-900 hover:text-primary-600 transition-colors"
+            className="text-lg font-semibold text-gray-900 hover:text-primary-600 transition-colors block"
           >
             {snippet.title}
           </Link>
@@ -52,36 +52,36 @@ const SnippetCard = ({ snippet, onDelete, showActions = true }) => {
         </div>
         
         {showActions && (
-          <div className="flex items-center space-x-2 ml-4">
+          <div className="flex items-center space-x-1 sm:space-x-2 sm:ml-4 justify-end">
             <button
               onClick={copyToClipboard}
-              className="p-2 text-gray-400 hover:text-gray-600 transition-colors"
+              className="p-2 sm:p-2 text-gray-400 hover:text-gray-600 transition-colors touch-manipulation"
               title="Copy code"
             >
-              <Copy className="h-4 w-4" />
+              <Copy className="h-4 w-4 sm:h-4 sm:w-4" />
             </button>
             <Link
               to={`/snippet/${snippet._id}`}
-              className="p-2 text-gray-400 hover:text-gray-600 transition-colors"
+              className="p-2 sm:p-2 text-gray-400 hover:text-gray-600 transition-colors touch-manipulation"
               title="View snippet"
             >
-              <Eye className="h-4 w-4" />
+              <Eye className="h-4 w-4 sm:h-4 sm:w-4" />
             </Link>
             {isOwner && (
               <>
                 <Link
                   to={`/snippet/${snippet._id}/edit`}
-                  className="p-2 text-gray-400 hover:text-primary-600 transition-colors"
+                  className="p-2 sm:p-2 text-gray-400 hover:text-primary-600 transition-colors touch-manipulation"
                   title="Edit snippet"
                 >
-                  <Edit className="h-4 w-4" />
+                  <Edit className="h-4 w-4 sm:h-4 sm:w-4" />
                 </Link>
                 <button
                   onClick={handleDelete}
-                  className="p-2 text-gray-400 hover:text-red-600 transition-colors"
+                  className="p-2 sm:p-2 text-gray-400 hover:text-red-600 transition-colors touch-manipulation"
                   title="Delete snippet"
                 >
-                  <Trash2 className="h-4 w-4" />
+                  <Trash2 className="h-4 w-4 sm:h-4 sm:w-4" />
                 </button>
               </>
             )}
@@ -90,15 +90,17 @@ const SnippetCard = ({ snippet, onDelete, showActions = true }) => {
       </div>
 
       {/* Tags and Language */}
-      <div className="flex items-center space-x-2 mb-4">
-        <span className="language-badge">
-          {snippet.language}
-        </span>
-        {snippet.isPublic && (
-          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-            Public
+      <div className="flex flex-col sm:flex-row sm:items-center sm:space-x-2 mb-4 space-y-2 sm:space-y-0">
+        <div className="flex items-center space-x-2">
+          <span className="language-badge">
+            {snippet.language}
           </span>
-        )}
+          {snippet.isPublic && (
+            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+              Public
+            </span>
+          )}
+        </div>
         {snippet.tags && snippet.tags.length > 0 && (
           <div className="flex flex-wrap gap-1">
             {snippet.tags.slice(0, 3).map((tag, index) => (
